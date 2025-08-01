@@ -328,10 +328,9 @@ function initGame() {
             }
 
             // Update player pawn and star animations
-
-            // Make player pawn float on the animated ocean
-            if (globalOcean && globalOceanGeometry) {
-                // Calculate ocean Y at player position (same as in the ocean animation, with bipolar amp)
+            // --- Make player pawn float on the animated global ocean ---
+            if (globalOcean && globalOceanGeometry && playerPawn) {
+                // Calculate animated ocean Y at player position (matches ocean mesh animation)
                 let t = globalOceanTime;
                 let px = playerPawn.position.x;
                 let pz = playerPawn.position.z;
@@ -340,7 +339,10 @@ function initGame() {
                 y += Math.sin(0.09 * px + t * 0.7) * 1.2 * amp;
                 y += Math.cos(0.08 * pz + t * 0.5) * 1.0 * amp;
                 y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
-                playerPawn.position.y = y;
+                // Offset to match ocean mesh Y position (ocean mesh is at y=0.1)
+                // Increase offset so player is fully above the water
+                const aboveWaterOffset = 2.2; // Increased for clear separation
+                playerPawn.position.y = y + 0.1 + aboveWaterOffset;
             }
             playerPawn.update(deltaTime, animationTime);
 
