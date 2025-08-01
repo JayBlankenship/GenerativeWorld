@@ -6,10 +6,10 @@ let globalOceanGeometry = null;
 let globalOceanSegments = 64;
 let globalOceanTime = Math.random() * 1000;
 let globalOceanWaveState = {
-    amp: 1.0,
-    speed: 4.0,
-    targetAmp: 1.0,
-    targetSpeed: 4.0,
+    amp: 0.5, // Calmer default amplitude
+    speed: 1.5, // Calmer default speed
+    targetAmp: 0.5,
+    targetSpeed: 1.5,
     timer: 0
 };
 let globalOceanSize = 120;
@@ -330,18 +330,26 @@ function initGame() {
             // Update player pawn and star animations
             // --- Make player pawn float on the animated global ocean ---
             if (globalOcean && globalOceanGeometry && playerPawn) {
+                // --- Localized water behavior system ---
+                function getLocalWaveMultiplier(x, z) {
+                    // Example: Calm in center, wilder at edges
+                    const dist = Math.sqrt(x * x + z * z);
+                    if (dist < 30) return 0.7; // Calm center
+                    if (dist > 80) return 1.5; // Wilder far out
+                    return 1.0; // Normal elsewhere
+                }
                 // Calculate animated ocean Y at player position (matches ocean mesh animation)
                 let t = globalOceanTime;
                 let px = playerPawn.position.x;
                 let pz = playerPawn.position.z;
-                let amp = globalOceanWaveState.amp;
+                let amp = globalOceanWaveState.amp * getLocalWaveMultiplier(px, pz);
                 let y = 0;
                 y += Math.sin(0.09 * px + t * 0.7) * 1.2 * amp;
                 y += Math.cos(0.08 * pz + t * 0.5) * 1.0 * amp;
                 y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
                 // Offset to match ocean mesh Y position (ocean mesh is at y=0.1)
                 // Increase offset so player is fully above the water
-                const aboveWaterOffset = 2.2; // Increased for clear separation
+                const aboveWaterOffset = 2.2;
                 playerPawn.position.y = y + 0.1 + aboveWaterOffset;
             }
             playerPawn.update(deltaTime, animationTime);
@@ -353,15 +361,15 @@ function initGame() {
                 if (globalOceanWaveState.timer <= 0) {
                     // Randomly pick a new target state: either 'insane' or 'chill'
                     if (Math.random() < 0.5) {
-                        // Insane: high amp, high speed
-                        globalOceanWaveState.targetAmp = 2.5 + Math.random() * 1.5;
-                        globalOceanWaveState.targetSpeed = 7.0 + Math.random() * 2.0;
+                        // Insane: high amp, high speed (but calmer than before)
+                        globalOceanWaveState.targetAmp = 1.2 + Math.random() * 0.7;
+                        globalOceanWaveState.targetSpeed = 2.5 + Math.random() * 1.0;
                     } else {
                         // Chill: low amp, low speed (but never stagnant)
-                        globalOceanWaveState.targetAmp = 0.3 + Math.random() * 0.2;
-                        globalOceanWaveState.targetSpeed = 1.0 + Math.random() * 0.5;
+                        globalOceanWaveState.targetAmp = 0.2 + Math.random() * 0.15;
+                        globalOceanWaveState.targetSpeed = 0.7 + Math.random() * 0.3;
                     }
-                    globalOceanWaveState.timer = 8 + Math.random() * 8; // Switch every 8-16 seconds (slower transitions)
+                    globalOceanWaveState.timer = 8 + Math.random() * 8;
                 }
                 // Slow down interpolation for smoother, longer transitions
                 globalOceanWaveState.amp += (globalOceanWaveState.targetAmp - globalOceanWaveState.amp) * deltaTime * 0.18;
@@ -369,7 +377,7 @@ function initGame() {
                 // Center ocean on player
                 globalOcean.position.x = playerPawn.position.x;
                 globalOcean.position.z = playerPawn.position.z;
-                globalOcean.position.y = 2.5; // Raise ocean mesh higher above the base
+                globalOcean.position.y = 2.5;
                 globalOceanTime += deltaTime * globalOceanWaveState.speed;
                 const pos = globalOceanGeometry.attributes.position;
                 const seg = globalOceanSegments;
@@ -377,13 +385,20 @@ function initGame() {
                 let px = playerPawn.position.x;
                 let pz = playerPawn.position.z;
                 let size = globalOceanSize;
+                function getLocalWaveMultiplier(x, z) {
+                    // Example: Calm in center, wilder at edges
+                    const dist = Math.sqrt(x * x + z * z);
+                    if (dist < 30) return 0.7; // Calm center
+                    if (dist > 80) return 1.5; // Wilder far out
+                    return 1.0; // Normal elsewhere
+                }
                 for (let xi = 0; xi <= seg; xi++) {
                     for (let zi = 0; zi <= seg; zi++) {
                         const idx = xi * (seg + 1) + zi;
                         const x = (xi - seg / 2) * (size / seg) + px;
                         const z = (zi - seg / 2) * (size / seg) + pz;
-                        // Bipolar ripple effect: modulate amplitude
-                        let amp = globalOceanWaveState.amp;
+                        // Use local multiplier for mesh
+                        let amp = globalOceanWaveState.amp * getLocalWaveMultiplier(x, z);
                         let y = 0;
                         y += Math.sin(0.09 * x + t * 0.7) * 1.2 * amp;
                         y += Math.cos(0.08 * z + t * 0.5) * 1.0 * amp;
