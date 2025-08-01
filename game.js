@@ -333,29 +333,37 @@ function initGame() {
             }
 
             // Update player pawn and star animations
-            // --- Make player pawn float on the animated global ocean ---
+            // --- Make player pawn float on the true animated ocean surface (including storms) ---
             if (globalOcean && globalOceanGeometry && playerPawn) {
-                // --- Localized water behavior system ---
+                // Use the exact same logic as the mesh for perfect sync
                 function getLocalWaveMultiplier(x, z) {
-                    // More intense localization: much calmer in center, much wilder far out
+                    let localAmp = 1.0;
+                    let swirlY = 0;
+                    if (globalOceanWaveState.storms) {
+                        for (let storm of globalOceanWaveState.storms) {
+                            const dx = x - storm.x;
+                            const dz = z - storm.z;
+                            const dist = Math.sqrt(dx * dx + dz * dz);
+                            if (dist < storm.radius) {
+                                swirlY += Math.sin(storm.swirl + dist * 0.02) * storm.amp * (1 - dist / storm.radius) * 0.5;
+                                localAmp = Math.max(localAmp, 1 + (storm.amp - 1) * (1 - dist / storm.radius));
+                            }
+                        }
+                    }
                     const dist = Math.sqrt(x * x + z * z);
-                    if (dist < 30) return 0.5; // Very calm center
-                    if (dist > 400) return 3.0; // Much wilder far out
-                    // Smooth interpolation between calm and wild
-                    return 0.5 + 2.5 * Math.min(1, Math.max(0, (dist - 30) / 370));
+                    let base = 1.0;
+                    if (dist < 30) base = 0.7;
+                    if (dist > 80) base = 1.5;
+                    return base * localAmp + swirlY;
                 }
-                // Calculate animated ocean Y at player position (matches ocean mesh animation)
                 let t = globalOceanTime;
                 let px = playerPawn.position.x;
                 let pz = playerPawn.position.z;
-                let amp = globalOceanWaveState.amp * getLocalWaveMultiplier(px, pz);
                 let y = 0;
-                y += Math.sin(0.09 * px + t * 0.7) * 1.2 * amp;
-                y += Math.cos(0.08 * pz + t * 0.5) * 1.0 * amp;
-                y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
+                y += Math.sin(0.09 * px + t * 0.7) * 1.2 * getLocalWaveMultiplier(px, pz);
+                y += Math.cos(0.08 * pz + t * 0.5) * 1.0 * getLocalWaveMultiplier(px, pz);
+                y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * getLocalWaveMultiplier(px, pz);
                 // Offset to match ocean mesh Y position (ocean mesh is at y=0.1)
-                // Increase offset so player is fully above the water
-                // Raise player by 25 units to match ocean
                 const aboveWaterOffset = 2.2 + 20;
                 playerPawn.position.y = y + 0.1 + aboveWaterOffset;
             }
@@ -367,18 +375,18 @@ function initGame() {
                 // Update storms
                 if (!globalOceanWaveState.storms) globalOceanWaveState.storms = [];
                 // Occasionally spawn a new storm far from the player
-                if (Math.random() < deltaTime * 0.08 && globalOceanWaveState.storms.length < 4) {
-                    // Storms spawn 600-1200 units from player, random angle
+                if (Math.random() < deltaTime * 0.04 && globalOceanWaveState.storms.length < 2) {
+                    // Storms spawn 800-1800 units from player, random angle
                     const angle = Math.random() * Math.PI * 2;
-                    const dist = 600 + Math.random() * 600;
+                    const dist = 800 + Math.random() * 1000;
                     globalOceanWaveState.storms.push({
                         x: playerPawn.position.x + Math.cos(angle) * dist,
                         z: playerPawn.position.z + Math.sin(angle) * dist,
-                        amp: 8 + Math.random() * 16, // Extremely high waves
-                        radius: 120 + Math.random() * 120,
+                        amp: 2 + Math.random() * 3, // Lower, more natural waves
+                        radius: 350 + Math.random() * 200, // Much larger, more gradual
                         swirl: Math.random() * Math.PI * 2,
-                        swirlSpeed: 0.2 + Math.random() * 0.5,
-                        moveSpeed: 8 + Math.random() * 8,
+                        swirlSpeed: 0.1 + Math.random() * 0.2,
+                        moveSpeed: 3 + Math.random() * 3,
                         target: { x: playerPawn.position.x, z: playerPawn.position.z },
                         age: 0
                     });
@@ -438,9 +446,9 @@ function initGame() {
                         const dz = z - storm.z;
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         if (dist < storm.radius) {
-                            // Swirl effect
-                            swirlY += Math.sin(storm.swirl + dist * 0.08) * storm.amp * (1 - dist / storm.radius);
-                            localAmp = Math.max(localAmp, storm.amp);
+                            // Smoother, more natural swirl
+                            swirlY += Math.sin(storm.swirl + dist * 0.02) * storm.amp * (1 - dist / storm.radius) * 0.5;
+                            localAmp = Math.max(localAmp, 1 + (storm.amp - 1) * (1 - dist / storm.radius));
                         }
                     }
                     // Example: Calm in center, wilder at edges
