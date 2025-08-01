@@ -7,11 +7,8 @@ export class TerrainPlane {
         this.gridZ = gridZ;
         this.scene = scene; // Store the scene reference
         this.planeSize = planeSize; // Store planeSize for use in generateBlocks
-        this.position = new THREE.Vector3(gridX * planeSize, 0, gridZ * planeSize);
-        this.mesh = new THREE.Mesh(planeGeometry, planeMaterial);
-        this.mesh.rotation.x = -Math.PI / 2;
-        this.mesh.position.copy(this.position);
-        this.scene.add(this.mesh);
+        this.position = new THREE.Vector3(gridX * planeSize, -2.5, gridZ * planeSize); // Lower terrain islands further
+        // Removed static blue plane mesh; only global animated ocean remains
 
         // Placeholder for future procedural generation (e.g., height, texture)
         this.terrainData = {
@@ -61,7 +58,7 @@ export class TerrainPlane {
         // Terrain parameters
         const gridCells = 2;
         const blockSize = (this.planeSize / gridCells) * 4.5;
-        const blockColor = 0x00fff7;
+        const blockColor = 0x00ff00; // Neon green
 
         // Get player position for exclusion zone
         let playerPos = (window.playerPawn && window.playerPawn.position)
