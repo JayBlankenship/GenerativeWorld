@@ -92,6 +92,13 @@ function initGame() {
                 }
                 
                 // Remove disconnected players
+            // Update global player position for exclusion zone logic
+            window.playerPosition = playerPawn.position.clone();
+
+            // Dynamically update exclusion zone for all terrain tiles every frame
+            if (terrainGenerator && terrainGenerator.planes && typeof window.updateExclusionZoneEveryFrame === 'function') {
+                window.updateExclusionZoneEveryFrame(Array.from(terrainGenerator.planes.values()));
+            }
                 for (const peerId of existingPeerIds) {
                     if (!currentPeerIds.includes(peerId)) {
                         console.log(`[Game] Removing networked player for peer: ${peerId}`);
