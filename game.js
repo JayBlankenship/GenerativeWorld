@@ -1,5 +1,29 @@
 import * as THREE from 'https://cdn.skypack.dev/three@0.134.0';
 import { createPlayerPawn } from './playerPawn.js';
+// --- GLOBAL OCEAN MESH ---
+let globalOcean = null;
+let globalOceanGeometry = null;
+let globalOceanSegments = 64;
+let globalOceanTime = Math.random() * 1000;
+let globalOceanSize = 120;
+
+function createGlobalOcean(scene, size = 120, segments = 64) {
+    const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
+    geometry.rotateX(-Math.PI / 2);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x00fff7,
+        wireframe: true,
+        transparent: false,
+        opacity: 1.0
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(0, 0.1, 0);
+    scene.add(mesh);
+    globalOcean = mesh;
+    globalOceanGeometry = geometry;
+    globalOceanSegments = segments;
+    globalOceanSize = size;
+}
 import { createStar } from './star.js';
 import { createAIPlayer } from './ai.js';
 import { TerrainPlane } from './terrainPlane.js';
@@ -47,6 +71,8 @@ function loadSettings() {
 
 function initGame() {
     const scene = new THREE.Scene();
+    // Add global animated ocean mesh (wireframe, ripple effect)
+    createGlobalOcean(scene, 120, 64);
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -297,6 +323,35 @@ function initGame() {
             // Update player pawn and star animations
             playerPawn.update(deltaTime, animationTime);
 
+            // --- Animate global ocean mesh (ripple effect) ---
+            if (globalOcean && globalOceanGeometry && playerPawn) {
+                // Center ocean on player
+                globalOcean.position.x = playerPawn.position.x;
+                globalOcean.position.z = playerPawn.position.z;
+                globalOcean.position.y = 0.1;
+                globalOceanTime += deltaTime * 1.5; // Animation speed
+                const pos = globalOceanGeometry.attributes.position;
+                const seg = globalOceanSegments;
+                let t = globalOceanTime;
+                let px = playerPawn.position.x;
+                let pz = playerPawn.position.z;
+                let size = globalOceanSize;
+                for (let xi = 0; xi <= seg; xi++) {
+                    for (let zi = 0; zi <= seg; zi++) {
+                        const idx = xi * (seg + 1) + zi;
+                        const x = (xi - seg / 2) * (size / seg) + px;
+                        const z = (zi - seg / 2) * (size / seg) + pz;
+                        // Ripple effect: sum of sine/cosine waves
+                        let y = 0;
+                        y += Math.sin(0.09 * x + t * 0.7) * 1.2;
+                        y += Math.cos(0.08 * z + t * 0.5) * 1.0;
+                        y += Math.sin(0.07 * (x + z) + t * 0.3) * 0.7;
+                        pos.setY(idx, y);
+                    }
+                }
+                pos.needsUpdate = true;
+                globalOceanGeometry.computeVertexNormals();
+            }
             // Broadcast our position to other players if we're in a complete lobby
             if (window.Network && window.Network.isInCompleteLobby && window.Network.isInCompleteLobby()) {
                 // Create player state object
