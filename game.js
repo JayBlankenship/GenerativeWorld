@@ -5,6 +5,13 @@ let globalOcean = null;
 let globalOceanGeometry = null;
 let globalOceanSegments = 64;
 let globalOceanTime = Math.random() * 1000;
+let globalOceanWaveState = {
+    amp: 1.0,
+    speed: 4.0,
+    targetAmp: 1.0,
+    targetSpeed: 4.0,
+    timer: 0
+};
 let globalOceanSize = 120;
 
 function createGlobalOcean(scene, size = 120, segments = 64) {
@@ -321,15 +328,47 @@ function initGame() {
             }
 
             // Update player pawn and star animations
+
+            // Make player pawn float on the animated ocean
+            if (globalOcean && globalOceanGeometry) {
+                // Calculate ocean Y at player position (same as in the ocean animation, with bipolar amp)
+                let t = globalOceanTime;
+                let px = playerPawn.position.x;
+                let pz = playerPawn.position.z;
+                let amp = globalOceanWaveState.amp;
+                let y = 0;
+                y += Math.sin(0.09 * px + t * 0.7) * 1.2 * amp;
+                y += Math.cos(0.08 * pz + t * 0.5) * 1.0 * amp;
+                y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
+                playerPawn.position.y = y;
+            }
             playerPawn.update(deltaTime, animationTime);
 
             // --- Animate global ocean mesh (ripple effect) ---
             if (globalOcean && globalOceanGeometry && playerPawn) {
+                // Bipolar ocean: smoothly interpolate between extreme and chill states
+                globalOceanWaveState.timer -= deltaTime;
+                if (globalOceanWaveState.timer <= 0) {
+                    // Randomly pick a new target state: either 'insane' or 'chill'
+                    if (Math.random() < 0.5) {
+                        // Insane: high amp, high speed
+                        globalOceanWaveState.targetAmp = 2.5 + Math.random() * 1.5;
+                        globalOceanWaveState.targetSpeed = 7.0 + Math.random() * 2.0;
+                    } else {
+                        // Chill: low amp, low speed (but never stagnant)
+                        globalOceanWaveState.targetAmp = 0.3 + Math.random() * 0.2;
+                        globalOceanWaveState.targetSpeed = 1.0 + Math.random() * 0.5;
+                    }
+                    globalOceanWaveState.timer = 8 + Math.random() * 8; // Switch every 8-16 seconds (slower transitions)
+                }
+                // Slow down interpolation for smoother, longer transitions
+                globalOceanWaveState.amp += (globalOceanWaveState.targetAmp - globalOceanWaveState.amp) * deltaTime * 0.18;
+                globalOceanWaveState.speed += (globalOceanWaveState.targetSpeed - globalOceanWaveState.speed) * deltaTime * 0.18;
                 // Center ocean on player
                 globalOcean.position.x = playerPawn.position.x;
                 globalOcean.position.z = playerPawn.position.z;
-                globalOcean.position.y = 0.1;
-                globalOceanTime += deltaTime * 1.5; // Animation speed
+                globalOcean.position.y = 2.5; // Raise ocean mesh higher above the base
+                globalOceanTime += deltaTime * globalOceanWaveState.speed;
                 const pos = globalOceanGeometry.attributes.position;
                 const seg = globalOceanSegments;
                 let t = globalOceanTime;
@@ -341,11 +380,12 @@ function initGame() {
                         const idx = xi * (seg + 1) + zi;
                         const x = (xi - seg / 2) * (size / seg) + px;
                         const z = (zi - seg / 2) * (size / seg) + pz;
-                        // Ripple effect: sum of sine/cosine waves
+                        // Bipolar ripple effect: modulate amplitude
+                        let amp = globalOceanWaveState.amp;
                         let y = 0;
-                        y += Math.sin(0.09 * x + t * 0.7) * 1.2;
-                        y += Math.cos(0.08 * z + t * 0.5) * 1.0;
-                        y += Math.sin(0.07 * (x + z) + t * 0.3) * 0.7;
+                        y += Math.sin(0.09 * x + t * 0.7) * 1.2 * amp;
+                        y += Math.cos(0.08 * z + t * 0.5) * 1.0 * amp;
+                        y += Math.sin(0.07 * (x + z) + t * 0.3) * 0.7 * amp;
                         pos.setY(idx, y);
                     }
                 }
