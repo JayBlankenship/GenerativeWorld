@@ -5,11 +5,32 @@ import { TerrainPlane } from './terrainPlane.js';
 export class TerrainGenerator {
     constructor(scene, planeSize, planeGeometry, planeMaterial) {
         this.scene = scene;
-        this.planeSize = planeSize;
-        this.planeGeometry = planeGeometry;
-        this.planeMaterial = planeMaterial;
+        // Restore higher ground resolution (smaller tiles)
+        this.planeSize = 2;
+        this.planeGeometry = new THREE.PlaneGeometry(this.planeSize, this.planeSize, 1, 1);
+        // Create a lightweight procedural checkerboard texture for visual depth
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        for (let y = 0; y < 4; y++) {
+            for (let x = 0; x < 4; x++) {
+                ctx.fillStyle = (x + y) % 2 === 0 ? '#0f0' : '#003300';
+                ctx.fillRect(x * 8, y * 8, 8, 8);
+            }
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+        this.planeMaterial = new THREE.MeshBasicMaterial({
+            map: texture,
+            color: 0xffffff,
+            wireframe: false,
+            transparent: false,
+            opacity: 1.0,
+            side: THREE.DoubleSide
+        });
         this.planes = new Map(); // Map<gridKey, TerrainPlane>
-        
         // For networking: track changes since last frame
         this.newPlanes = new Set(); // Track newly created planes for networking
         this.removedPlanes = new Set(); // Track removed planes for networking
@@ -59,7 +80,7 @@ export class TerrainGenerator {
         const edgeThreshold = 5;
 
         // Generate planes in a massive cylinder (circle) around the player
-        const maxDistance = 40; // 40 grid cells radius (very large)
+        const maxDistance = 160; // 160 grid cells radius (even larger)
         for (let dx = -maxDistance; dx <= maxDistance; dx++) {
             for (let dz = -maxDistance; dz <= maxDistance; dz++) {
                 if (dx === 0 && dz === 0) continue; // Skip the center (already handled)

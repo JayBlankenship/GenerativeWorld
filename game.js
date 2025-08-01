@@ -15,8 +15,9 @@ let globalOceanWaveState = {
 let globalOceanSize = 120;
 
 function createGlobalOcean(scene, size = 120, segments = 64) {
-    // Increase ocean mesh size to cover the expanded terrain area
-    size = 400; // Covers a much larger area (adjust as needed)
+    // Increase ocean mesh size and resolution to cover the expanded terrain area
+    size = 800;
+    segments = 256; // Higher resolution for smoother waves
     const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
     geometry.rotateX(-Math.PI / 2);
     const material = new THREE.MeshBasicMaterial({
@@ -335,11 +336,12 @@ function initGame() {
             if (globalOcean && globalOceanGeometry && playerPawn) {
                 // --- Localized water behavior system ---
                 function getLocalWaveMultiplier(x, z) {
-                    // Example: Calm in center, wilder at edges
+                    // More intense localization: much calmer in center, much wilder far out
                     const dist = Math.sqrt(x * x + z * z);
-                    if (dist < 30) return 0.7; // Calm center
-                    if (dist > 80) return 1.5; // Wilder far out
-                    return 1.0; // Normal elsewhere
+                    if (dist < 30) return 0.5; // Very calm center
+                    if (dist > 400) return 3.0; // Much wilder far out
+                    // Smooth interpolation between calm and wild
+                    return 0.5 + 2.5 * Math.min(1, Math.max(0, (dist - 30) / 370));
                 }
                 // Calculate animated ocean Y at player position (matches ocean mesh animation)
                 let t = globalOceanTime;

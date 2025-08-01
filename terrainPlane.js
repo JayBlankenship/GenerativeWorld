@@ -80,7 +80,9 @@ export class TerrainPlane {
                 let isPath = (pathDirection === 'horizontal') ? pathIndices.includes(z) : pathIndices.includes(x);
                 if (isPath) continue;
                 // Only generate a cube for this block with a 10% chance
-                if (Math.random() < 0.1) {
+                // Only generate a cube for this block with a 4% chance (sparser)
+                // Only generate a cube for this block with a 1% chance (much sparser)
+                if (Math.random() < 0.01) {
                     const stackHeight = 1 + Math.floor(Math.random() * 10);
                     for (let h = 0; h < stackHeight; h++) {
                         const matrix = new THREE.Matrix4();
