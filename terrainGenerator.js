@@ -5,8 +5,8 @@ import { TerrainPlane } from './terrainPlane.js';
 export class TerrainGenerator {
     constructor(scene, planeSize, planeGeometry, planeMaterial) {
         this.scene = scene;
-        // Lower ground resolution (larger tiles) for better performance
-        this.planeSize = 8;
+        // Slightly higher ground resolution (smaller tiles)
+        this.planeSize = 5;
         this.planeGeometry = new THREE.PlaneGeometry(this.planeSize, this.planeSize, 1, 1);
         // Create a lightweight procedural checkerboard texture for visual depth
         const canvas = document.createElement('canvas');
@@ -79,8 +79,8 @@ export class TerrainGenerator {
         const localZ = entityPosition.z - gridZ * this.planeSize;
         const edgeThreshold = 5;
 
-        // Generate planes in a smaller cylinder (circle) around the player for less lag
-        const maxDistance = 60; // 60 grid cells radius (much smaller)
+        // Generate planes in a larger cylinder (circle) around the player for more coverage
+        const maxDistance = 90; // 90 grid cells radius (extended)
         for (let dx = -maxDistance; dx <= maxDistance; dx++) {
             for (let dz = -maxDistance; dz <= maxDistance; dz++) {
                 if (dx === 0 && dz === 0) continue; // Skip the center (already handled)
