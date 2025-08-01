@@ -354,8 +354,8 @@ function initGame() {
                 y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
                 // Offset to match ocean mesh Y position (ocean mesh is at y=0.1)
                 // Increase offset so player is fully above the water
-                // Raise player by 15 units to match ocean
-                const aboveWaterOffset = 2.2 + 15;
+                // Raise player by 25 units to match ocean
+                const aboveWaterOffset = 2.2 + 25;
                 playerPawn.position.y = y + 0.1 + aboveWaterOffset;
             }
             playerPawn.update(deltaTime, animationTime);
@@ -383,7 +383,7 @@ function initGame() {
                 // Center ocean on player
                 globalOcean.position.x = playerPawn.position.x;
                 globalOcean.position.z = playerPawn.position.z;
-                globalOcean.position.y = 17.5; // Raised 15 units higher
+                globalOcean.position.y = 27.5; // Raised 25 units higher
                 globalOceanTime += deltaTime * globalOceanWaveState.speed;
                 const pos = globalOceanGeometry.attributes.position;
                 const seg = globalOceanSegments;
