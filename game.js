@@ -15,6 +15,8 @@ let globalOceanWaveState = {
 let globalOceanSize = 120;
 
 function createGlobalOcean(scene, size = 120, segments = 64) {
+    // Increase ocean mesh size to cover the expanded terrain area
+    size = 400; // Covers a much larger area (adjust as needed)
     const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
     geometry.rotateX(-Math.PI / 2);
     const material = new THREE.MeshBasicMaterial({
@@ -80,7 +82,8 @@ function initGame() {
     const scene = new THREE.Scene();
     // Add global animated ocean mesh (wireframe, ripple effect)
     createGlobalOcean(scene, 120, 64);
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // Increase far plane to 5000 and near plane to 1.0 for large world and high ocean
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1.0, 5000);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -349,7 +352,8 @@ function initGame() {
                 y += Math.sin(0.07 * (px + pz) + t * 0.3) * 0.7 * amp;
                 // Offset to match ocean mesh Y position (ocean mesh is at y=0.1)
                 // Increase offset so player is fully above the water
-                const aboveWaterOffset = 2.2;
+                // Raise player by 15 units to match ocean
+                const aboveWaterOffset = 2.2 + 15;
                 playerPawn.position.y = y + 0.1 + aboveWaterOffset;
             }
             playerPawn.update(deltaTime, animationTime);
@@ -377,7 +381,7 @@ function initGame() {
                 // Center ocean on player
                 globalOcean.position.x = playerPawn.position.x;
                 globalOcean.position.z = playerPawn.position.z;
-                globalOcean.position.y = 2.5;
+                globalOcean.position.y = 17.5; // Raised 15 units higher
                 globalOceanTime += deltaTime * globalOceanWaveState.speed;
                 const pos = globalOceanGeometry.attributes.position;
                 const seg = globalOceanSegments;

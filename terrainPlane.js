@@ -34,8 +34,9 @@ export class TerrainPlane {
         // Removed cached wireframe geometry (fixes black screen)
     }
 
-    // Static helper to update all terrain tiles
+    // Static helper to update all terrain tiles (LOD disabled, always update all)
     static updateAllTerrains(tilesArray) {
+        // LOD logic removed: always update all terrain tiles
         for (const tile of tilesArray) {
             tile.updateTerrain();
         }
@@ -60,13 +61,7 @@ export class TerrainPlane {
         const blockSize = (this.planeSize / gridCells) * 4.5;
         const blockColor = 0x00ff00; // Neon green
 
-        // Get player position for exclusion zone
-        let playerPos = (window.playerPawn && window.playerPawn.position)
-            ? window.playerPawn.position.clone()
-            : (window.playerPosition && typeof window.playerPosition.x === 'number' && typeof window.playerPosition.z === 'number')
-                ? new THREE.Vector3(window.playerPosition.x, window.playerPosition.y, window.playerPosition.z)
-                : new THREE.Vector3(0, 0, 0);
-        const exclusionRadius = Math.max(this.planeSize, blockSize * 2.5);
+        // Exclusion zone removed: always generate terrain blocks everywhere
         let blockMatrices = [];
         let blockCount = 0;
         // Path generation
@@ -82,9 +77,8 @@ export class TerrainPlane {
                     this.position.y + blockSize / 2 + 0.01,
                     this.position.z + (z - gridCells / 2 + 0.5) * blockSize * spreadFactor
                 );
-                const blockDist = blockCenter.distanceTo(playerPos);
                 let isPath = (pathDirection === 'horizontal') ? pathIndices.includes(z) : pathIndices.includes(x);
-                if (blockDist < exclusionRadius || isPath) continue;
+                if (isPath) continue;
                 // Only generate a cube for this block with a 10% chance
                 if (Math.random() < 0.1) {
                     const stackHeight = 1 + Math.floor(Math.random() * 10);

@@ -58,62 +58,26 @@ export class TerrainGenerator {
         const localZ = entityPosition.z - gridZ * this.planeSize;
         const edgeThreshold = 5;
 
-        // Generate planes up to 5 grid cells out in all four directions
-        const maxDistance = 18; // Generate 5 cells out (total span of 11 cells: -5 to +5)
+        // Generate planes in a massive cylinder (circle) around the player
+        const maxDistance = 40; // 40 grid cells radius (very large)
         for (let dx = -maxDistance; dx <= maxDistance; dx++) {
             for (let dz = -maxDistance; dz <= maxDistance; dz++) {
                 if (dx === 0 && dz === 0) continue; // Skip the center (already handled)
-                if (Math.abs(dx) + Math.abs(dz) > maxDistance) continue; // Keep it a cross shape (only x or z offset)
-
-                // Check if near an edge in the respective direction
-                if (
-                    (dx !== 0 && Math.abs(localX) > this.planeSize / 2 - edgeThreshold) ||
-                    (dz !== 0 && Math.abs(localZ) > this.planeSize / 2 - edgeThreshold)
-                ) {
-                    const newGridX = gridX + dx;
-                    const newGridZ = gridZ + dz;
-                    const newGridKey = `${newGridX},${newGridZ}`;
-                    if (!this.planes.has(newGridKey)) {
-                        this.createPlane(newGridX, newGridZ);
-                    }
+                // Only fill within a circle (cylinder) radius
+                if (Math.sqrt(dx * dx + dz * dz) > maxDistance) continue;
+                const newGridX = gridX + dx;
+                const newGridZ = gridZ + dz;
+                const newGridKey = `${newGridX},${newGridZ}`;
+                if (!this.planes.has(newGridKey)) {
+                    this.createPlane(newGridX, newGridZ);
                 }
             }
         }
     }
 
-    // Remove distant planes
+    // Remove distant planes (disabled: keep all terrain tiles loaded)
     removeDistantPlanes(playerPosition, aiPlayers) {
-        const maxDistance = this.planeSize * 10;
-        this.planes.forEach((terrainPlane, gridKey) => {
-            let shouldRemove = true;
-            
-            // Check player distance
-            if (playerPosition.distanceTo(terrainPlane.position) <= maxDistance) {
-                shouldRemove = false;
-            }
-            
-            // Check AI distances
-            if (shouldRemove) {
-                for (const aiPlayer of aiPlayers) {
-                    if (aiPlayer.position.distanceTo(terrainPlane.position) <= maxDistance) {
-                        shouldRemove = false;
-                        break;
-                    }
-                }
-            }
-            
-            if (shouldRemove) {
-                // Track this as a removed plane for networking
-                this.removedPlanes.add({
-                    gridX: terrainPlane.gridX,
-                    gridZ: terrainPlane.gridZ,
-                    gridKey: gridKey
-                });
-                
-                terrainPlane.remove();
-                this.planes.delete(gridKey);
-            }
-        });
+        // Terrain removal disabled to prevent ocean floor from disappearing
     }
 
     // Get terrain changes since last frame (for networking)
